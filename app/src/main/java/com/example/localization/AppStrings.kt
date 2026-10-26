@@ -43,6 +43,16 @@ object AppStrings {
     AppLanguage.EN -> "Admin"
   }
 
+  fun tabLogin(lang: AppLanguage) = when (lang) {
+    AppLanguage.BN -> "লগইন"
+    AppLanguage.EN -> "Login"
+  }
+
+  fun tabAccount(lang: AppLanguage) = when (lang) {
+    AppLanguage.BN -> "অ্যাকাউন্ট"
+    AppLanguage.EN -> "Account"
+  }
+
   // Filters & Search
   fun searchHint(lang: AppLanguage) = when (lang) {
     AppLanguage.BN -> "নাম, ফোন বা এলাকা খুঁজুন..."

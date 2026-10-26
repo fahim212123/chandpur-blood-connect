@@ -40,12 +40,16 @@ import com.example.ui.theme.PureWhite
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.IconButton
 
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Login
+
 @Composable
 fun HeaderBar(
   currentLanguage: AppLanguage,
   onToggleLanguage: () -> Unit,
   currentUserEmail: String? = null,
   onSignOut: (() -> Unit)? = null,
+  onNavigateToLogin: (() -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
   val isBengali = currentLanguage == AppLanguage.BN
@@ -158,20 +162,67 @@ fun HeaderBar(
           }
         }
 
-        if (onSignOut != null) {
+        if (currentUserEmail != null) {
+          if (onNavigateToLogin != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            IconButton(
+              onClick = onNavigateToLogin,
+              modifier = Modifier
+                .size(34.dp)
+                .testTag("header_account_button")
+            ) {
+              Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "My Account",
+                tint = PureWhite,
+                modifier = Modifier.size(22.dp)
+              )
+            }
+          }
+          if (onSignOut != null) {
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(
+              onClick = onSignOut,
+              modifier = Modifier
+                .size(34.dp)
+                .testTag("header_sign_out_button")
+            ) {
+              Icon(
+                imageVector = Icons.AutoMirrored.Filled.Logout,
+                contentDescription = "Sign Out",
+                tint = PureWhite,
+                modifier = Modifier.size(18.dp)
+              )
+            }
+          }
+        } else if (onNavigateToLogin != null) {
           Spacer(modifier = Modifier.width(6.dp))
-          IconButton(
-            onClick = onSignOut,
+          Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = PureWhite,
             modifier = Modifier
-              .size(34.dp)
-              .testTag("header_sign_out_button")
+              .testTag("header_login_button")
+              .clip(RoundedCornerShape(20.dp))
+              .clickable { onNavigateToLogin() }
           ) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Filled.Logout,
-              contentDescription = "Sign Out",
-              tint = PureWhite,
-              modifier = Modifier.size(18.dp)
-            )
+            Row(
+              modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Icon(
+                imageVector = Icons.Default.Login,
+                contentDescription = "Sign In",
+                tint = BloodRed800,
+                modifier = Modifier.size(16.dp)
+              )
+              Spacer(modifier = Modifier.width(4.dp))
+              Text(
+                text = if (isBengali) "লগইন" else "Login",
+                color = BloodRed800,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+              )
+            }
           }
         }
       }

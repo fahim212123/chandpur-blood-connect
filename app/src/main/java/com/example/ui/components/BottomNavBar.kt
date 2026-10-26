@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Bloodtype
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PersonAdd
@@ -43,6 +45,7 @@ fun BottomNavBar(
   onScreenSelect: (AppScreen) -> Unit,
   currentLanguage: AppLanguage,
   pendingCount: Int,
+  isUserSignedIn: Boolean = false,
   modifier: Modifier = Modifier
 ) {
   NavigationBar(
@@ -147,6 +150,35 @@ fun BottomNavBar(
         unselectedTextColor = TextMuted
       ),
       modifier = Modifier.testTag("nav_tab_admin")
+    )
+
+    // Tab 4: Login / Account
+    val isLoginSelected = currentScreen == AppScreen.LOGIN
+    val loginLabel = if (isUserSignedIn) AppStrings.tabAccount(currentLanguage) else AppStrings.tabLogin(currentLanguage)
+    NavigationBarItem(
+      selected = isLoginSelected,
+      onClick = { onScreenSelect(AppScreen.LOGIN) },
+      icon = {
+        Icon(
+          imageVector = if (isLoginSelected) Icons.Default.AccountCircle else Icons.Outlined.AccountCircle,
+          contentDescription = loginLabel
+        )
+      },
+      label = {
+        Text(
+          text = loginLabel,
+          fontSize = 12.sp,
+          fontWeight = if (isLoginSelected) FontWeight.Bold else FontWeight.Medium
+        )
+      },
+      colors = NavigationBarItemDefaults.colors(
+        selectedIconColor = BloodRed800,
+        selectedTextColor = BloodRed800,
+        indicatorColor = BloodRedContainer,
+        unselectedIconColor = TextMuted,
+        unselectedTextColor = TextMuted
+      ),
+      modifier = Modifier.testTag("nav_tab_login")
     )
   }
 }

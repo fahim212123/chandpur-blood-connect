@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -37,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -92,6 +94,7 @@ fun DonorListScreen(
   onToggleOnlyAvailable: (Boolean) -> Unit,
   onDonorClick: (Donor) -> Unit,
   onUpdateDateClick: (Donor) -> Unit,
+  onNavigateToRegister: (() -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
@@ -125,12 +128,13 @@ fun DonorListScreen(
     derivedStateOf { donors.count { it.isAvailableNow(today) } }
   }
 
-  Column(
-    modifier = modifier
-      .fillMaxSize()
-      .background(SurfaceOffWhite)
-  ) {
-    // Top Filter & Search Section
+  Box(modifier = modifier.fillMaxSize()) {
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(SurfaceOffWhite)
+    ) {
+      // Top Filter & Search Section
     Surface(
       color = PureWhite,
       shadowElevation = 2.dp,
@@ -416,6 +420,36 @@ fun DonorListScreen(
       }
     }
   }
+
+  if (onNavigateToRegister != null) {
+    FloatingActionButton(
+      onClick = onNavigateToRegister,
+      containerColor = BloodRed800,
+      contentColor = PureWhite,
+      modifier = Modifier
+        .align(Alignment.BottomEnd)
+        .padding(bottom = 16.dp, end = 16.dp)
+        .testTag("fab_register_donor")
+    ) {
+      Row(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Icon(
+          imageVector = Icons.Default.PersonAdd,
+          contentDescription = "Register as Donor",
+          modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+          text = if (isBengali) "রক্তদাতা হন" else "Become Donor",
+          fontWeight = FontWeight.Bold,
+          fontSize = 14.sp
+        )
+      }
+    }
+  }
+}
 }
 
 @Composable
@@ -627,3 +661,4 @@ fun DonorCard(
     }
   }
 }
+

@@ -21,7 +21,8 @@ import kotlinx.coroutines.launch
 enum class AppScreen {
   DONOR_LIST,
   REGISTER,
-  ADMIN
+  ADMIN,
+  LOGIN
 }
 
 class BloodDonorViewModel(

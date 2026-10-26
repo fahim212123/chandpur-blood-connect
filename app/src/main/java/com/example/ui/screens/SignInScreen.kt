@@ -65,12 +65,23 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material3.OutlinedButton
+import com.example.viewmodel.AppScreen
 import kotlinx.coroutines.tasks.await
 
 @Composable
 fun SignInScreen(
   currentLanguage: AppLanguage,
   onToggleLanguage: () -> Unit,
+  currentUserEmail: String? = null,
+  onSignOut: (() -> Unit)? = null,
+  onNavigateToScreen: ((AppScreen) -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
@@ -252,82 +263,256 @@ fun SignInScreen(
         }
       }
 
-      // Bottom Sign-In Section
+      // Bottom Account / Sign-In Section
       Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
       ) {
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.Center,
-          modifier = Modifier.padding(bottom = 14.dp)
-        ) {
-          Icon(
-            imageVector = Icons.Default.Security,
-            contentDescription = null,
-            tint = BloodRed800,
-            modifier = Modifier.size(16.dp)
-          )
-          Spacer(modifier = Modifier.width(6.dp))
-          Text(
-            text = if (isBengali) "নিরাপদ ক্লাউড ডেটাবেস সাইন-ইন" else "Secure Cloud Database Authentication",
-            fontSize = 12.sp,
-            color = TextMuted,
-            fontWeight = FontWeight.Medium
-          )
-        }
+        if (currentUserEmail != null) {
+          // Signed-in State Profile Card
+          val isAdmin = currentUserEmail == "hossanfahim01@gmail.com" ||
+              currentUserEmail == "admin@test.com" ||
+              currentUserEmail.endsWith("@admin.lifelinkcp.org")
 
-        Button(
-          onClick = { startGoogleSignIn() },
-          enabled = !isLoading,
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(54.dp)
-            .testTag("sign_in_with_google_button"),
-          shape = RoundedCornerShape(14.dp),
-          colors = ButtonDefaults.buttonColors(
-            containerColor = BloodRed800,
-            contentColor = PureWhite
-          ),
-          elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-        ) {
-          if (isLoading) {
-            CircularProgressIndicator(
-              color = PureWhite,
-              modifier = Modifier.size(24.dp),
-              strokeWidth = 2.dp
+          Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = SurfaceOffWhite,
+            border = BorderStroke(1.dp, BloodRedContainer),
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("account_profile_card")
+          ) {
+            Column(
+              modifier = Modifier.padding(16.dp),
+              horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.AccountCircle,
+                  contentDescription = null,
+                  tint = BloodRed800,
+                  modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                  text = currentUserEmail,
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = TextDark
+                )
+              }
+
+              Spacer(modifier = Modifier.height(8.dp))
+
+              Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (isAdmin) BloodRedContainer else PureWhite
+              ) {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                  Icon(
+                    imageVector = if (isAdmin) Icons.Default.AdminPanelSettings else Icons.Default.Verified,
+                    contentDescription = null,
+                    tint = BloodRed800,
+                    modifier = Modifier.size(16.dp)
+                  )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text(
+                    text = if (isAdmin) {
+                      if (isBengali) "প্রশাসক (Verified Admin)" else "Administrator"
+                    } else {
+                      if (isBengali) "নিবন্ধিত ব্যবহারকারী" else "Verified User"
+                    },
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = BloodRed800
+                  )
+                }
+              }
+
+              Spacer(modifier = Modifier.height(14.dp))
+
+              // Quick Navigation Buttons
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                if (onNavigateToScreen != null) {
+                  OutlinedButton(
+                    onClick = { onNavigateToScreen(AppScreen.DONOR_LIST) },
+                    modifier = Modifier
+                      .weight(1f)
+                      .height(42.dp)
+                      .testTag("account_nav_donors_button"),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = BloodRed800),
+                    border = BorderStroke(1.dp, BloodRed800)
+                  ) {
+                    Icon(imageVector = Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isBengali) "রক্তদাতা" else "Search", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                  }
+
+                  OutlinedButton(
+                    onClick = { onNavigateToScreen(AppScreen.REGISTER) },
+                    modifier = Modifier
+                      .weight(1f)
+                      .height(42.dp)
+                      .testTag("account_nav_register_button"),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = BloodRed800),
+                    border = BorderStroke(1.dp, BloodRed800)
+                  ) {
+                    Icon(imageVector = Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isBengali) "নিবন্ধন" else "Register", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                  }
+
+                  if (isAdmin) {
+                    OutlinedButton(
+                      onClick = { onNavigateToScreen(AppScreen.ADMIN) },
+                      modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp)
+                        .testTag("account_nav_admin_button"),
+                      shape = RoundedCornerShape(10.dp),
+                      colors = ButtonDefaults.outlinedButtonColors(contentColor = BloodRed800),
+                      border = BorderStroke(1.dp, BloodRed800)
+                    ) {
+                      Icon(imageVector = Icons.Default.AdminPanelSettings, contentDescription = null, modifier = Modifier.size(16.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text(if (isBengali) "অ্যাডমিন" else "Admin", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                  }
+                }
+              }
+
+              Spacer(modifier = Modifier.height(12.dp))
+
+              if (onSignOut != null) {
+                Button(
+                  onClick = onSignOut,
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .testTag("account_sign_out_button"),
+                  shape = RoundedCornerShape(10.dp),
+                  colors = ButtonDefaults.buttonColors(containerColor = BloodRed800)
+                ) {
+                  Text(
+                    text = if (isBengali) "লগআউট করুন" else "Sign Out",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                  )
+                }
+              }
+            }
+          }
+        } else {
+          // Unauthenticated Sign-In Box
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(bottom = 12.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Security,
+              contentDescription = null,
+              tint = BloodRed800,
+              modifier = Modifier.size(16.dp)
             )
-          } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Icon(
-                imageVector = Icons.Default.WaterDrop,
-                contentDescription = null,
-                tint = PureWhite,
-                modifier = Modifier.size(20.dp)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = if (isBengali) "নিরাপদ ক্লাউড ডেটাবেস সাইন-ইন" else "Secure Cloud Database Authentication",
+              fontSize = 12.sp,
+              color = TextMuted,
+              fontWeight = FontWeight.Medium
+            )
+          }
+
+          Button(
+            onClick = { startGoogleSignIn() },
+            enabled = !isLoading,
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(52.dp)
+              .testTag("sign_in_with_google_button"),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = BloodRed800,
+              contentColor = PureWhite
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+          ) {
+            if (isLoading) {
+              CircularProgressIndicator(
+                color = PureWhite,
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp
               )
-              Spacer(modifier = Modifier.width(10.dp))
+            } else {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                  imageVector = Icons.Default.WaterDrop,
+                  contentDescription = null,
+                  tint = PureWhite,
+                  modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                  text = if (isBengali) "Google দিয়ে সাইন-ইন করুন" else "Sign in with Google",
+                  fontSize = 16.sp,
+                  fontWeight = FontWeight.Bold
+                )
+              }
+            }
+          }
+
+          if (onNavigateToScreen != null) {
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedButton(
+              onClick = { onNavigateToScreen(AppScreen.DONOR_LIST) },
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(46.dp)
+                .testTag("continue_as_guest_button"),
+              shape = RoundedCornerShape(12.dp),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = BloodRed800),
+              border = BorderStroke(1.dp, BloodRed800)
+            ) {
+              Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+              )
+              Spacer(modifier = Modifier.width(8.dp))
               Text(
-                text = if (isBengali) "Google দিয়ে সাইন-ইন করুন" else "Sign in with Google",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                text = if (isBengali) "রক্তদাতা ব্রাউজ করুন (গেস্ট)" else "Browse Donors (Guest)",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
               )
             }
           }
+
+          Spacer(modifier = Modifier.height(12.dp))
+
+          Text(
+            text = if (isBengali)
+              "গোপনীয়তা রক্ষা: সাধারণ সার্চে ব্যক্তিগত ফোন নম্বর প্রদর্শিত হয় না"
+            else
+              "Privacy protected: Private contact numbers are never exposed in public search",
+            fontSize = 11.sp,
+            color = TextMuted,
+            textAlign = TextAlign.Center,
+            lineHeight = 15.sp,
+            modifier = Modifier.padding(horizontal = 8.dp)
+          )
         }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Text(
-          text = if (isBengali)
-            "গোপনীয়তা রক্ষা: সাধারণ সার্চে ব্যক্তিগত ফোন নম্বর প্রদর্শিত হয় না"
-          else
-            "Privacy protected: Private contact numbers are never exposed in public search",
-          fontSize = 11.sp,
-          color = TextMuted,
-          textAlign = TextAlign.Center,
-          lineHeight = 15.sp,
-          modifier = Modifier.padding(horizontal = 8.dp)
-        )
       }
     }
   }

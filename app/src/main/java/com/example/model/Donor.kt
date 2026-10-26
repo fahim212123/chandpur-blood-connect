@@ -128,7 +128,8 @@ data class Donor(
   val registrationDate: DonorDate = DonorDate.today(),
   val emergencyContact: String? = null,
   val notes: String? = null,
-  val lastDonationLocation: String? = null
+  val lastDonationLocation: String? = null,
+  val userId: String? = null
 ) {
   fun displayName(isBengali: Boolean): String =
     if (isBengali && !nameBn.isNullOrBlank()) nameBn else name

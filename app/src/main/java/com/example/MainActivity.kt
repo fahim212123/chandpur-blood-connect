@@ -72,40 +72,30 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppRoot(auth: FirebaseAuth = Firebase.auth) {
   val currentUser by auth.authStateFlow().collectAsStateWithLifecycle(initialValue = auth.currentUser)
-  var authLanguage by remember { mutableStateOf(AppLanguage.BN) }
-
   val user = currentUser
-  if (user == null) {
-    // Unauthenticated: Render Sign-In Gate (No Firestore queries triggered)
-    SignInScreen(
-      currentLanguage = authLanguage,
-      onToggleLanguage = {
-        authLanguage = if (authLanguage == AppLanguage.BN) AppLanguage.EN else AppLanguage.BN
-      }
-    )
-  } else {
-    // Authenticated: Initialize ViewModel with provisioned database ID
-    val viewModel: BloodDonorViewModel = viewModel(
-      key = user.uid,
-      factory = viewModelFactory {
-        initializer {
-          val app = checkNotNull(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
-          val databaseId = app.getString(R.string.firestore_database_id)
-          val db = FirebaseFirestore.getInstance(databaseId)
-          BloodDonorViewModel(DonorRepository(db), user.uid, user.email)
-        }
-      }
-    )
 
-    BloodDonationApp(viewModel = viewModel, currentUserEmail = user.email)
-  }
+  val viewModel: BloodDonorViewModel = viewModel(
+    key = user?.uid ?: "guest_session",
+    factory = viewModelFactory {
+      initializer {
+        val app = checkNotNull(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
+        val databaseId = app.getString(R.string.firestore_database_id)
+        val db = FirebaseFirestore.getInstance(databaseId)
+        BloodDonorViewModel(DonorRepository(db), user?.uid ?: "", user?.email)
+      }
+    }
+  )
+
+  BloodDonationApp(viewModel = viewModel, currentUser = user)
 }
 
 @Composable
 fun BloodDonationApp(
   viewModel: BloodDonorViewModel,
-  currentUserEmail: String?
+  currentUser: FirebaseUser?
 ) {
+  val currentUserEmail = currentUser?.email
+  val isUserSignedIn = currentUser != null
   val donors by viewModel.donors.collectAsState()
   val pendingRegistrations by viewModel.pendingRegistrations.collectAsState()
   val currentLanguage by viewModel.language.collectAsState()
@@ -155,7 +145,8 @@ fun BloodDonationApp(
         currentLanguage = currentLanguage,
         onToggleLanguage = { viewModel.toggleLanguage() },
         currentUserEmail = currentUserEmail,
-        onSignOut = { viewModel.signOut() }
+        onSignOut = { viewModel.signOut() },
+        onNavigateToLogin = { viewModel.navigateTo(AppScreen.LOGIN) }
       )
     },
     bottomBar = {
@@ -163,7 +154,8 @@ fun BloodDonationApp(
         currentScreen = currentScreen,
         onScreenSelect = { viewModel.navigateTo(it) },
         currentLanguage = currentLanguage,
-        pendingCount = pendingCount
+        pendingCount = pendingCount,
+        isUserSignedIn = isUserSignedIn
       )
     },
     snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -187,7 +179,8 @@ fun BloodDonationApp(
             onSearchQueryChange = { viewModel.setSearchQuery(it) },
             onToggleOnlyAvailable = { viewModel.setOnlyAvailable(it) },
             onDonorClick = { viewModel.selectDonorForProfile(it) },
-            onUpdateDateClick = { viewModel.selectDonorForDateUpdate(it) }
+            onUpdateDateClick = { viewModel.selectDonorForDateUpdate(it) },
+            onNavigateToRegister = { viewModel.navigateTo(AppScreen.REGISTER) }
           )
         }
 
@@ -220,6 +213,16 @@ fun BloodDonationApp(
               viewModel.changeDonorStatus(donorId, newStatus)
             },
             onDonorClick = { viewModel.selectDonorForProfile(it) }
+          )
+        }
+
+        AppScreen.LOGIN -> {
+          SignInScreen(
+            currentLanguage = currentLanguage,
+            onToggleLanguage = { viewModel.toggleLanguage() },
+            currentUserEmail = currentUserEmail,
+            onSignOut = { viewModel.signOut() },
+            onNavigateToScreen = { viewModel.navigateTo(it) }
           )
         }
       }

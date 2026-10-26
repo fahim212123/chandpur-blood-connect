@@ -66,7 +66,8 @@ data class FirestoreDonor(
       isAvailableManually = isAvailableManually,
       lastDonationLocation = lastDonationLocation,
       emergencyContact = emergencyContact,
-      notes = notes
+      notes = notes,
+      userId = userId
     )
   }
 }
@@ -132,7 +133,8 @@ data class FirestoreRegistration(
       verificationStatus = vStatus,
       isAvailableManually = true,
       emergencyContact = emergencyContact,
-      notes = notes
+      notes = notes,
+      userId = userId
     )
   }
 }
