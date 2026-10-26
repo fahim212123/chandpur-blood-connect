@@ -1,0 +1,182 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Role check: Only users with verified runtime admin email (client writes to /admins strictly denied)
+    function isAdmin() {
+      return isSignedIn() && (
+        ('email' in request.auth.token) && (
+          request.auth.token.email == "hossanfahim01@gmail.com" ||
+          request.auth.token.email == "admin@test.com" ||
+          request.auth.token.email == "admin@lifelinkcp.org"
+        )
+      );
+    }
+
+    function isValidDonorPublic(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+             (!('nameBn' in data) || (data.nameBn is string && data.nameBn.size() <= 100)) &&
+             data.bloodGroup in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] &&
+             data.upazila in ['Chandpur Sadar', 'Faridganj'] &&
+             data.area is string && data.area.size() >= 2 && data.area.size() <= 120 &&
+             (!('areaBn' in data) || (data.areaBn is string && data.areaBn.size() <= 120)) &&
+             (!('isFirstTimeDonor' in data) || data.isFirstTimeDonor is bool) &&
+             (!('lastDonationDate' in data) || (data.lastDonationDate is string && data.lastDonationDate.size() <= 30)) &&
+             (!('lastDonationLocation' in data) || (data.lastDonationLocation is string && data.lastDonationLocation.size() <= 120)) &&
+             (!('totalDonations' in data) || ((data.totalDonations is int || data.totalDonations is number) && data.totalDonations >= 0)) &&
+             data.verificationStatus in ['PENDING', 'VERIFIED', 'REJECTED', 'SUSPENDED'] &&
+             (!('isAvailableManually' in data) || data.isAvailableManually is bool) &&
+             data.createdAt is timestamp && data.createdAt <= request.time + duration.value(1, 'm') &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time + duration.value(1, 'm');
+    }
+
+    function isValidDonorPrivate(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.phone is string && data.phone.size() >= 11 && data.phone.size() <= 20 &&
+             (!('emergencyContact' in data) || (data.emergencyContact is string && data.emergencyContact.size() <= 20)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time + duration.value(1, 'm');
+    }
+
+    function isValidRegistration(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() >= 11 && data.phone.size() <= 20 &&
+             data.bloodGroup in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] &&
+             data.upazila in ['Chandpur Sadar', 'Faridganj'] &&
+             data.area is string && data.area.size() >= 2 && data.area.size() <= 120 &&
+             (!('isFirstTimeDonor' in data) || data.isFirstTimeDonor is bool) &&
+             (!('lastDonationDate' in data) || (data.lastDonationDate is string && data.lastDonationDate.size() <= 30)) &&
+             (!('emergencyContact' in data) || (data.emergencyContact is string && data.emergencyContact.size() <= 20)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.verificationStatus in ['PENDING', 'VERIFIED', 'REJECTED', 'SUSPENDED'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time + duration.value(1, 'm') &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time + duration.value(1, 'm');
+    }
+
+    // --- 1. Donors Collection (Public Searchable Directory) ---
+    match /donors/{donorId} {
+      // In public search, non-admins and non-owners can ONLY read/list VERIFIED donors
+      allow get: if isSignedIn() && (
+        resource.data.verificationStatus == 'VERIFIED' ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.verificationStatus == 'VERIFIED' ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Create: Admin or self-registration with initial status PENDING
+      allow create: if isSignedIn() && isValidId(donorId) && isValidDonorPublic(incoming()) && (
+        isAdmin() || (
+          incoming().userId == request.auth.uid &&
+          request.auth.uid == donorId &&
+          incoming().verificationStatus == 'PENDING'
+        )
+      );
+
+      // Update: Donors can only update donation date, location, count, availability. Only admins can change verificationStatus.
+      allow update: if isSignedIn() && isValidId(donorId) &&
+                       resource != null &&
+                       isValidDonorPublic(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().userId == existing().userId && (
+        isAdmin() || (
+          request.auth.uid == existing().userId &&
+          incoming().verificationStatus == existing().verificationStatus &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'lastDonationDate',
+            'lastDonationLocation',
+            'totalDonations',
+            'isAvailableManually',
+            'updatedAt'
+          ])
+        )
+      );
+
+      allow delete: if isSignedIn() && isValidId(donorId) && (isAdmin() || request.auth.uid == existing().userId);
+
+      // --- 2. Private Subcollection: Sensitive Contact Details ---
+      match /private/contact {
+        // Only the owner donor and admins can access phone numbers and emergency contacts
+        allow get: if isSignedIn() && isValidId(donorId) && (
+          request.auth.uid == donorId || isAdmin()
+        );
+
+        allow list: if isSignedIn() && isValidId(donorId) && (
+          request.auth.uid == donorId || isAdmin()
+        );
+
+        allow create, update: if isSignedIn() && isValidId(donorId) && isValidDonorPrivate(incoming()) && (
+          request.auth.uid == donorId || isAdmin()
+        );
+
+        allow delete: if isSignedIn() && isValidId(donorId) && (
+          request.auth.uid == donorId || isAdmin()
+        );
+      }
+    }
+
+    // --- 3. Donor Registrations (Moderation Queue) ---
+    match /donor_registrations/{registrationId} {
+      // Normal users can only register with status 'PENDING'
+      allow create: if isSignedIn() && isValidId(registrationId) &&
+                       isValidRegistration(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().verificationStatus == 'PENDING';
+
+      // Registrants can view their own registration; Admins can view all
+      allow get: if isSignedIn() && isValidId(registrationId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+
+      // Only admins can approve/reject/suspend registrations
+      allow update: if isSignedIn() && isValidId(registrationId) &&
+                       resource != null &&
+                       isValidRegistration(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().userId == existing().userId &&
+                       isAdmin();
+
+      allow delete: if isSignedIn() && isValidId(registrationId) && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // --- 4. Admins Registry (Read-only to clients; no self-assignment) ---
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && isValidId(adminId);
+      allow write: if false; // Users CANNOT write or assign themselves roles
+    }
+  }
+}

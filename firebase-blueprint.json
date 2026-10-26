@@ -1,0 +1,219 @@
+{
+  "entities": {
+    "DonorPublic": {
+      "title": "DonorPublic",
+      "description": "Public directory of verified blood donors for search and discovery in Chandpur and Faridganj",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the donor"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the donor"
+        },
+        "nameBn": {
+          "type": "string",
+          "description": "Bengali name of the donor"
+        },
+        "bloodGroup": {
+          "type": "string",
+          "description": "Blood group code",
+          "enum": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+        },
+        "upazila": {
+          "type": "string",
+          "description": "Upazila name",
+          "enum": ["Chandpur Sadar", "Faridganj"]
+        },
+        "area": {
+          "type": "string",
+          "description": "Local union, village or landmark area"
+        },
+        "areaBn": {
+          "type": "string",
+          "description": "Bengali area description"
+        },
+        "isFirstTimeDonor": {
+          "type": "boolean",
+          "description": "Flag indicating if the donor is donating for the first time"
+        },
+        "lastDonationDate": {
+          "type": "string",
+          "description": "ISO date string of last whole blood donation"
+        },
+        "lastDonationLocation": {
+          "type": "string",
+          "description": "Hospital or donation center"
+        },
+        "totalDonations": {
+          "type": "integer",
+          "description": "Lifetime whole blood donation count"
+        },
+        "verificationStatus": {
+          "type": "string",
+          "description": "Moderation and verification state",
+          "enum": ["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"]
+        },
+        "isAvailableManually": {
+          "type": "boolean",
+          "description": "Manual donor availability readiness toggle"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp. Must be FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp. Must be FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["userId", "name", "bloodGroup", "upazila", "area", "verificationStatus", "createdAt", "updatedAt"]
+    },
+    "DonorPrivate": {
+      "title": "DonorPrivate",
+      "description": "Private sensitive contact details restricted to the donor owner and authorized admins",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the donor"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Direct mobile phone number for urgent contact"
+        },
+        "emergencyContact": {
+          "type": "string",
+          "description": "Optional alternate phone number"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Medical readiness notes or registration comments"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when contact details were last modified"
+        }
+      },
+      "required": ["userId", "phone", "updatedAt"]
+    },
+    "DonorRegistration": {
+      "title": "DonorRegistration",
+      "description": "Self-submitted donor registration record pending admin review",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the registrant"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the registrant"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Registrant mobile phone number"
+        },
+        "bloodGroup": {
+          "type": "string",
+          "description": "Blood group code",
+          "enum": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+        },
+        "upazila": {
+          "type": "string",
+          "description": "Selected Upazila",
+          "enum": ["Chandpur Sadar", "Faridganj"]
+        },
+        "area": {
+          "type": "string",
+          "description": "Union, village, or area"
+        },
+        "isFirstTimeDonor": {
+          "type": "boolean",
+          "description": "First-time donor flag"
+        },
+        "lastDonationDate": {
+          "type": "string",
+          "description": "Previous donation date if not first-time"
+        },
+        "emergencyContact": {
+          "type": "string",
+          "description": "Optional alternate contact number"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Registration notes or health fitness statement"
+        },
+        "verificationStatus": {
+          "type": "string",
+          "description": "Initial status must be PENDING",
+          "enum": ["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["userId", "name", "phone", "bloodGroup", "upazila", "area", "verificationStatus", "createdAt", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Record designating an administrator. Writeable only through secure server/console.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin email address"
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrative role",
+          "enum": ["ADMIN", "SUPERADMIN"]
+        },
+        "assignedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when admin role was granted"
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/donors/{donorId}": {
+      "schema": {
+        "$ref": "#/entities/DonorPublic"
+      },
+      "description": "Directory of verified blood donors. Publicly searchable only when verified."
+    },
+    "/donors/{donorId}/private/contact": {
+      "schema": {
+        "$ref": "#/entities/DonorPrivate"
+      },
+      "description": "Private contact information accessible strictly by the donor owner and admins"
+    },
+    "/donor_registrations/{registrationId}": {
+      "schema": {
+        "$ref": "#/entities/DonorRegistration"
+      },
+      "description": "User registration submissions awaiting moderation"
+    },
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "#/entities/AdminRecord"
+      },
+      "description": "Privileged administration registry"
+    }
+  }
+}
